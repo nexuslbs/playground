@@ -20,4 +20,9 @@ COPY assets/style.css /assets/style.css
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
-ENTRYPOINT ["/entrypoint.sh"]
+# Expose as a CLI command for exec / docker compose run usage
+RUN ln -s /entrypoint.sh /usr/local/bin/md-to-pdf
+
+# No ENTRYPOINT — uses CMD so docker-compose can override with "sleep infinity"
+# Usage: docker compose exec md-pdf md-to-pdf <input.md> <output.pdf>
+CMD ["sleep", "infinity"]
