@@ -1,0 +1,216 @@
+/* Markdown to PDF - Professional WeasyPrint Stylesheet */
+
+/* Page setup */
+@page {
+    size: A4;
+    margin: 2.5cm;
+    @bottom-center {
+        content: counter(page);
+        font-family: "DejaVu Serif", serif;
+        font-size: 9pt;
+        color: #666;
+    }
+}
+
+/* Base typography */
+body {
+    font-family: "DejaVu Serif", serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #333;
+    orphans: 3;
+    widows: 3;
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+    font-family: "DejaVu Sans", sans-serif;
+    color: #2c3e50;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+}
+
+h1 {
+    font-size: 24pt;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 0.5cm;
+    page-break-before: always;
+    page-break-after: avoid;
+}
+
+h1:first-of-type {
+    page-break-before: avoid;
+}
+
+h2 {
+    font-size: 18pt;
+    font-weight: 600;
+    margin-top: 0.8cm;
+    margin-bottom: 0.3cm;
+    padding-bottom: 4pt;
+    border-bottom: 2px solid #2c3e50;
+}
+
+h3 {
+    font-size: 14pt;
+    font-weight: 600;
+    margin-top: 0.6cm;
+    margin-bottom: 0.2cm;
+}
+
+h4 {
+    font-size: 12pt;
+    font-weight: 600;
+    margin-top: 0.5cm;
+    margin-bottom: 0.2cm;
+}
+
+h5, h6 {
+    font-size: 11pt;
+    font-weight: 600;
+    margin-top: 0.4cm;
+    margin-bottom: 0.2cm;
+}
+
+/* Paragraphs */
+p {
+    margin: 0.3cm 0;
+    text-align: justify;
+}
+
+/* Links */
+a {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+/* Code blocks */
+pre {
+    font-family: "DejaVu Sans Mono", "Courier New", monospace;
+    font-size: 9pt;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 10pt;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    page-break-inside: avoid;
+}
+
+pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+}
+
+/* Inline code */
+code {
+    font-family: "DejaVu Sans Mono", "Courier New", monospace;
+    font-size: 9.5pt;
+    background-color: #f8f8f8;
+    border: 1px solid #eee;
+    border-radius: 2px;
+    padding: 1pt 3pt;
+    color: #e74c3c;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.5cm 0;
+    font-size: 10pt;
+    page-break-inside: avoid;
+}
+
+th {
+    background-color: #2c3e50;
+    color: white;
+    font-family: "DejaVu Sans", sans-serif;
+    font-weight: 600;
+    padding: 8pt 6pt;
+    text-align: left;
+    border: 1px solid #2c3e50;
+}
+
+td {
+    padding: 6pt;
+    border: 1px solid #ddd;
+}
+
+tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+tr:nth-child(odd) {
+    background-color: #ffffff;
+}
+
+/* Blockquotes */
+blockquote {
+    margin: 0.4cm 0;
+    padding: 6pt 12pt;
+    border-left: 4px solid #2c3e50;
+    font-style: italic;
+    color: #666;
+    page-break-inside: avoid;
+}
+
+blockquote p {
+    margin: 0;
+}
+
+/* Lists */
+ul, ol {
+    margin: 0.3cm 0;
+    padding-left: 1.2cm;
+}
+
+li {
+    margin: 0.1cm 0;
+}
+
+/* Images */
+img {
+    max-width: 100%;
+    height: auto;
+    page-break-inside: avoid;
+}
+
+/* Horizontal rules */
+hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 0.5cm 0;
+}
+
+/* Definition lists */
+dt {
+    font-family: "DejaVu Sans", sans-serif;
+    font-weight: 600;
+    margin-top: 0.2cm;
+}
+
+dd {
+    margin-left: 1cm;
+}
+
+/* Footnotes */
+.footnotes {
+    margin-top: 1cm;
+    padding-top: 0.3cm;
+    border-top: 1px solid #ccc;
+    font-size: 9pt;
+}
+
+/* Captions */
+caption, figcaption {
+    font-style: italic;
+    font-size: 10pt;
+    color: #666;
+    text-align: center;
+    margin-top: 4pt;
+}
