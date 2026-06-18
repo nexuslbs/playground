@@ -1,0 +1,8 @@
+services:
+  chat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "12348:3000"
+    restart: unless-stopped

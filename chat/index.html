@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Room</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    #header {
+      background: #16213e;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #0f3460;
+    }
+    #header h1 { font-size: 20px; }
+    #username-section { display: flex; gap: 8px; align-items: center; }
+    #username-input {
+      background: #0f3460;
+      border: 1px solid #1a4a8a;
+      color: #eee;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+    }
+    #username-input:focus { border-color: #4a8ad6; }
+    #set-username-btn {
+      background: #e94560;
+      color: #fff;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    #set-username-btn:hover { background: #c73652; }
+    #main { display: flex; flex: 1; overflow: hidden; }
+    #sidebar {
+      width: 220px;
+      background: #16213e;
+      border-right: 1px solid #0f3460;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    #sidebar h3 {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #888;
+      margin-bottom: 12px;
+    }
+    #users-list { list-style: none; }
+    #users-list li {
+      padding: 6px 0;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #users-list li::before {
+      content: '';
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4ade80;
+    }
+    #chat-area { flex: 1; display: flex; flex-direction: column; }
+    #messages {
+      flex: 1;
+      padding: 16px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .msg {
+      padding: 8px 14px;
+      border-radius: 8px;
+      max-width: 70%;
+      line-height: 1.4;
+    }
+    .msg.self {
+      align-self: flex-end;
+      background: #0f3460;
+    }
+    .msg.other {
+      align-self: flex-start;
+      background: #1a3a5c;
+    }
+    .msg .meta {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 2px;
+    }
+    .msg .meta .user { color: #e94560; font-weight: 600; }
+    .msg .meta .time { margin-left: 8px; }
+    .msg .text { font-size: 14px; }
+    .system-msg {
+      text-align: center;
+      color: #888;
+      font-size: 13px;
+      padding: 4px 0;
+      font-style: italic;
+    }
+    #input-bar {
+      display: flex;
+      padding: 12px 24px;
+      background: #16213e;
+      border-top: 1px solid #0f3460;
+    }
+    #message-input {
+      flex: 1;
+      background: #0f3460;
+      border: 1px solid #1a4a8a;
+      color: #eee;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+    #message-input:focus { border-color: #4a8ad6; }
+    #send-btn {
+      background: #e94560;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      margin-left: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    #send-btn:hover { background: #c73652; }
+    #status {
+      padding: 6px 24px;
+      text-align: center;
+      font-size: 12px;
+    }
+    #status.connected { background: #064e3b; color: #6ee7b7; }
+    #status.disconnected { background: #4a1a2e; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1>💬 Chat Room</h1>
+    <div id="username-section">
+      <input type="text" id="username-input" placeholder="Enter username..." maxlength="20">
+      <button id="set-username-btn">Set Name</button>
+    </div>
+  </div>
+
+  <div id="status" class="disconnected">Disconnected</div>
+
+  <div id="main">
+    <div id="sidebar">
+      <h3>Online Users</h3>
+      <ul id="users-list"></ul>
+    </div>
+    <div id="chat-area">
+      <div id="messages"></div>
+      <div id="input-bar">
+        <input type="text" id="message-input" placeholder="Type a message..." disabled>
+        <button id="send-btn" disabled>Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const messagesEl = document.getElementById('messages');
+    const usersListEl = document.getElementById('users-list');
+    const messageInput = document.getElementById('message-input');
+    const sendBtn = document.getElementById('send-btn');
+    const usernameInput = document.getElementById('username-input');
+    const setUsernameBtn = document.getElementById('set-username-btn');
+    const statusEl = document.getElementById('status');
+
+    let ws;
+    let myId = null;
+    let myUsername = null;
+    let connected = false;
+
+    function connect() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${protocol}//${location.host}`);
+
+      ws.onopen = () => {
+        connected = true;
+        statusEl.textContent = 'Connected';
+        statusEl.className = 'connected';
+        messageInput.disabled = false;
+        sendBtn.disabled = false;
+        addSystemMessage('Connected to chat server');
+      };
+
+      ws.onclose = () => {
+        connected = false;
+        statusEl.textContent = 'Disconnected (reconnecting in 3s...)';
+        statusEl.className = 'disconnected';
+        messageInput.disabled = true;
+        sendBtn.disabled = true;
+        addSystemMessage('Disconnected from server');
+        setTimeout(connect, 3000);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
+
+      ws.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        switch (data.type) {
+          case 'welcome':
+            myId = data.id;
+            myUsername = data.username;
+            usernameInput.value = myUsername;
+            break;
+
+          case 'system':
+            addSystemMessage(data.message);
+            break;
+
+          case 'message':
+            addMessage(data);
+            break;
+
+          case 'users':
+            updateUsersList(data.users);
+            break;
+
+          case 'username-set':
+            myUsername = data.username;
+            break;
+
+          case 'error':
+            addSystemMessage('Error: ' + data.message);
+            break;
+        }
+      };
+    }
+
+    function addSystemMessage(text) {
+      const div = document.createElement('div');
+      div.className = 'system-msg';
+      div.textContent = text;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function addMessage(data) {
+      const div = document.createElement('div');
+      const isSelf = data.username === myUsername;
+      div.className = `msg ${isSelf ? 'self' : 'other'}`;
+      div.innerHTML = `
+        <div class="meta">
+          <span class="user">${escapeHtml(data.username)}</span>
+          <span class="time">${data.time}</span>
+        </div>
+        <div class="text">${escapeHtml(data.text)}</div>
+      `;
+      messagesEl.appendChild(div);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function updateUsersList(users) {
+      usersListEl.innerHTML = users.map(u => `<li>${escapeHtml(u)}</li>`).join('');
+    }
+
+    function escapeHtml(text) {
+      const d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
+
+    function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text || !connected) return;
+      ws.send(JSON.stringify({ type: 'message', text }));
+      messageInput.value = '';
+      messageInput.focus();
+    }
+
+    function setUsername() {
+      const name = usernameInput.value.trim();
+      if (!name || !connected) return;
+      ws.send(JSON.stringify({ type: 'set-username', username: name }));
+    }
+
+    // Event listeners
+    sendBtn.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+    setUsernameBtn.addEventListener('click', setUsername);
+    usernameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') setUsername();
+    });
+
+    // Start connection
+    connect();
+  </script>
+</body>
+</html>
