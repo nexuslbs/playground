@@ -2,24 +2,14 @@ import {
   Board,
   checkWin,
   countFlags,
-  createBoard,
   placeMines,
   revealAllMines,
   revealCell,
   toggleFlag,
+  createGame,
+  Difficulty,
+  getDifficulty,
 } from './game';
-
-interface DifficultyConfig {
-  rows: number;
-  cols: number;
-  mines: number;
-}
-
-const DIFFICULTIES: Record<string, DifficultyConfig> = {
-  beginner: { rows: 9, cols: 9, mines: 10 },
-  intermediate: { rows: 16, cols: 16, mines: 40 },
-  expert: { rows: 16, cols: 30, mines: 99 },
-};
 
 type GameStatus = 'idle' | 'playing' | 'won' | 'lost';
 
@@ -50,13 +40,13 @@ const statusMsg = document.getElementById('statusMsg')!;
 const difficultySelect = document.getElementById('difficultySelect') as HTMLSelectElement;
 const newGameBtn = document.getElementById('newGameBtn') as HTMLButtonElement;
 
-function currentDifficulty(): DifficultyConfig {
-  return DIFFICULTIES[difficultySelect.value] ?? DIFFICULTIES.beginner;
+function currentDifficulty(): Difficulty {
+  return getDifficulty(difficultySelect.value);
 }
 
 function startNewGame(): void {
   const config = currentDifficulty();
-  board = createBoard(config.rows, config.cols, config.mines);
+  board = createGame(config);
   minesPlaced = false;
   status = 'idle';
   seconds = 0;

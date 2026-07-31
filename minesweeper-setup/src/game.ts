@@ -192,3 +192,43 @@ export function revealAllMines(board: Board): void {
     }
   }
 }
+
+
+// ---------------------------------------------------------------------------
+// Difficulty modes
+// ---------------------------------------------------------------------------
+
+export type DifficultyId = 'beginner' | 'intermediate' | 'expert';
+
+/** A difficulty preset: board dimensions and mine count. */
+export interface Difficulty {
+  id: DifficultyId;
+  name: string;
+  rows: number;
+  cols: number;
+  mines: number;
+}
+
+/** Built-in difficulty presets exposed through the game API. */
+export const DIFFICULTIES: Record<DifficultyId, Difficulty> = {
+  beginner: { id: 'beginner', name: 'Beginner', rows: 9, cols: 9, mines: 10 },
+  intermediate: { id: 'intermediate', name: 'Intermediate', rows: 16, cols: 16, mines: 40 },
+  expert: { id: 'expert', name: 'Expert', rows: 30, cols: 16, mines: 99 },
+};
+
+/** Difficulty ids in display order. */
+export const DIFFICULTY_IDS: DifficultyId[] = ['beginner', 'intermediate', 'expert'];
+
+/** The difficulty used when none is specified. */
+export const DEFAULT_DIFFICULTY: DifficultyId = 'beginner';
+
+/** Look up a difficulty preset by id, falling back to the default for unknown ids. */
+export function getDifficulty(id: string): Difficulty {
+  return DIFFICULTIES[id as DifficultyId] ?? DIFFICULTIES[DEFAULT_DIFFICULTY];
+}
+
+/** Create a new game board from a difficulty preset (id or object). */
+export function createGame(difficulty: DifficultyId | Difficulty = DEFAULT_DIFFICULTY): Board {
+  const preset = typeof difficulty === 'string' ? getDifficulty(difficulty) : difficulty;
+  return createBoard(preset.rows, preset.cols, preset.mines);
+}
