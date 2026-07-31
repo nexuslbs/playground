@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minesweeper</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <h1>💣 Minesweeper</h1>
+      <div id="stats">
+        <div id="mineCounter">Mines: <span id="mineCountValue">10</span></div>
+        <div id="timer">Time: <span id="timerValue">0</span>s</div>
+        <select id="difficultySelect">
+          <option value="beginner" selected>Beginner (9×9, 10 mines)</option>
+          <option value="intermediate">Intermediate (16×16, 40 mines)</option>
+          <option value="expert">Expert (30×16, 99 mines)</option>
+        </select>
+        <button id="newGameBtn" type="button">New Game</button>
+      </div>
+      <canvas id="gameCanvas"></canvas>
+      <p id="statusMsg">Left-click to reveal · Right-click to flag</p>
+    </div>
+    <script type="module" src="/src/index.ts"></script>
+  </body>
+</html>
