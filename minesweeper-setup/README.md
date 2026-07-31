@@ -32,7 +32,8 @@ minesweeper-setup/
 │   ├── index.ts        # canvas rendering and input handling
 │   └── style.css
 ├── tests/
-│   └── minesweeper.test.ts
+│   ├── minesweeper.test.ts
+│   └── difficulty.test.ts     # difficulty presets: dimensions, mine counts, defaults
 ├── public/favicon.svg
 ├── Dockerfile          # serves the built app via nginx on port 12345
 └── Dockerfile.builder  # multi-stage build: node → nginx
