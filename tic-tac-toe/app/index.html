@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tic-Tac-Toe</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <h1 id="app-title">Tic-Tac-Toe</h1>
+    <p class="subtitle">Classic 3&times;3 game — play a friend, or try to beat the unbeatable minimax computer.</p>
+
+    <section class="controls" aria-label="game controls">
+      <label for="mode">Mode</label>
+      <select id="mode">
+        <option value="pvp" selected>2 Players</option>
+        <option value="ai">vs Computer (you = X)</option>
+      </select>
+
+      <label for="difficulty">Computer</label>
+      <select id="difficulty">
+        <option value="minimax" selected>Minimax (unbeatable)</option>
+        <option value="random">Random moves</option>
+      </select>
+
+      <button id="new-game" type="button">New game</button>
+    </section>
+
+    <p id="status" class="status turn-x" role="status">X's turn</p>
+
+    <div id="board" class="board" aria-label="tic-tac-toe board"></div>
+
+    <section class="scoreboard" aria-label="scoreboard">
+      <div class="score x"><span class="label">X</span><span id="score-x">0</span></div>
+      <div class="score draw"><span class="label">Draws</span><span id="score-draw">0</span></div>
+      <div class="score o"><span class="label">O</span><span id="score-o">0</span></div>
+    </section>
+
+    <button id="reset-scores" type="button" class="ghost">Reset scores</button>
+
+    <footer>tic-tac-toe v1.0.0 &middot; part of nexuslbs/playground</footer>
+  </main>
+
+  <script src="tictactoe.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
