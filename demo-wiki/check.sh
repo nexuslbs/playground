@@ -16,7 +16,11 @@ docker compose -f docker-compose.yml ps
 echo
 echo "== HTTP status of http://localhost:12349/ =="
 code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 5 http://localhost:12349/ 2>/dev/null || true)"
-echo "http://localhost:12349/ -> ${code:-unreachable}"
+if [ -z "$code" ] || [ "$code" = "000" ]; then
+  echo "http://localhost:12349/ -> unreachable from this container (it is a HOST port)"
+else
+  echo "http://localhost:12349/ -> $code"
+fi
 
 echo
 echo "== HTTP status inside the wiki container =="

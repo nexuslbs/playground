@@ -45,7 +45,10 @@ demo_password() {
 
 # The stock MediaWiki password policy rejects the short, well-known passwords of
 # the demo accounts; this throwaway wiki deliberately relaxes it.
-relax_password_policy() {
+# Settings the stock installer does not write: the demo password policy and
+# serving the Main Page at "/" (so http://localhost:12349/ answers 200 directly
+# instead of redirecting to the article URL).
+apply_demo_settings() {
   compose run --rm --no-deps --entrypoint sh wiki -c '
     settings=/var/www/html/LocalSettings.php
     if ! grep -q "demo-wiki password policy" "$settings"; then
@@ -59,6 +62,13 @@ $wgPasswordPolicy["policies"]["default"]["PasswordCannotMatchDefaults"] = false;
 $wgPasswordPolicy["policies"]["default"]["PasswordCannotBeSubstringInUsername"] = false;
 $wgPasswordPolicy["policies"]["sysop"]["MinimalPasswordLength"] = 1;
 $wgPasswordPolicy["policies"]["bureaucrat"]["MinimalPasswordLength"] = 1;
+PHP
+    fi
+    if ! grep -q "demo-wiki domain root" "$settings"; then
+      cat >> "$settings" <<"PHP"
+
+// demo-wiki domain root: show the Main Page at "/" instead of redirecting.
+$wgMainPageIsDomainRoot = true;
 PHP
     fi
   '
@@ -103,11 +113,14 @@ main() {
       "Demo Wiki" "$ADMIN_ACCOUNT"
   fi
 
-  log "applying the demo password policy"
-  relax_password_policy
+  log "applying the demo settings"
+  apply_demo_settings
 
   log "starting the wiki on http://localhost:12349/"
   compose up -d wiki
+  # Reload LocalSettings.php: a still-running Apache may hold a cached copy of a
+  # settings change applied above.
+  compose restart wiki >/dev/null
   wait_for_wiki
 
   log "creating the demo accounts"
