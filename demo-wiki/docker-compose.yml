@@ -1,0 +1,46 @@
+# demo-wiki: a throwaway MediaWiki (MediaWiki 1.43 + MariaDB 11) demo.
+#
+# Run it with ./start.sh. The wiki publishes host port 12349; the container
+# listens on 8080 (see apache/ports.conf).
+name: demo-wiki
+
+services:
+  db:
+    image: mariadb:11
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: wiki
+      # The database is internal to this throwaway compose project and holds no
+      # data worth protecting; the demo accounts live in the wiki, not in the DB.
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
+    volumes:
+      - dbdata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  wiki:
+    image: mediawiki:1.43
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "12349:8080"
+    # `docker compose config` canonicalizes the ports entry into target/published,
+    # so the short host:container mapping is recorded here as well.
+    labels:
+      - "org.nexuslbs.demo-wiki.port=12349:8080"
+    volumes:
+      # The whole web root lives in a named volume, so the installer-generated
+      # LocalSettings.php is never committed to the repository.
+      - webroot:/var/www/html
+      - ./seed:/seed:ro
+      - ./apache/ports.conf:/etc/apache2/ports.conf:ro
+      - ./apache/000-default.conf:/etc/apache2/sites-available/000-default.conf:ro
+
+volumes:
+  webroot:
+  dbdata:

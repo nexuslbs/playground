@@ -1,0 +1,30 @@
+__NOTOC__
+
+{| style="width:100%; border:1px solid #a2a9b1; background:#f8f9fa; padding:0.6em;"
+| '''Welcome to the Demo Wiki''', a throwaway
+[https://www.mediawiki.org/wiki/MediaWiki MediaWiki] instance seeded from the
+omniagent wiki.
+|}
+
+The '''Demo Wiki''' is a demo of [https://www.mediawiki.org/wiki/MediaWiki MediaWiki],
+the engine behind Wikipedia and the other Wikimedia projects. Its pages are
+imported from the <code>seed/*.wiki</code> files by <code>./seed.sh</code>, so
+the list below is everything that was seeded.
+
+== Start here ==
+
+* [[:Category:Omniagent|Omniagent articles]]
+* [[:Category:Workstation|Workstation articles]]
+* [[Template:OmniFact|The OmniFact template]]
+* [[Special:AllPages|Every page in this wiki]]
+
+== All pages ==
+
+{{Special:AllPages}}
+
+== About this demo ==
+
+This wiki runs as its own Docker Compose project in
+<code>nexuslbs/playground/demo-wiki</code> and publishes
+[http://localhost:12349/ host port 12349]. The project README has the one
+command that brings it up and the DEMO-ONLY accounts.

@@ -1,0 +1,7 @@
+# Generated state: the MediaWiki installer writes LocalSettings.php into the
+# webroot volume, never into this repository.
+LocalSettings.php
+.env
+*.pem
+*.key
+*.log
