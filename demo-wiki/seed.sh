@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 #
-# demo-wiki seed import: every seed/*.wiki file becomes a wiki page.
+# demo-wiki seed import: every seed/*.wiki file becomes one wiki page.
 #
 # The file name is the page title:
 #   * a leading "NNNN-" ordering prefix is dropped,
-#   * underscores become spaces (MediaWiki does that itself),
-#   * a namespace prefix becomes a namespace ("Template_X" -> "Template:X").
+#   * "_" becomes a space (MediaWiki normalizes that itself),
+#   * a leading namespace name becomes a namespace:
+#     Template_OmniFact.wiki -> Template:OmniFact.
 #
-# We import with --overwrite, which makes the run idempotent: a page whose
-# current revision already matches its file is skipped and no new revision is
+# The import uses --overwrite, which makes the run idempotent: a page whose
+# current revision already equals its file is skipped and no new revision is
 # created. Run ./start.sh first (it installs the wiki); this script only imports.
 set -euo pipefail
 
@@ -34,12 +35,32 @@ work=/tmp/demo-wiki-seed
 rm -rf "$work"
 mkdir -p "$work"
 
+# MediaWiki recognizes a namespace only from a ":" in the title, so the
+# "Namespace_page" file name has to become the "Namespace:page" title form.
+# Longest namespace name first so "User talk" wins over "User".
+to_title() {
+  local base="$1" ns prefix offset
+  for ns in \
+    "MediaWiki talk" "Project talk" "Template talk" "Category talk" \
+    "User talk" "File talk" "Help talk" "Module talk" \
+    "MediaWiki" "Template" "Category" "Project" "Special" \
+    "Talk" "User" "File" "Help" "Module" "Media"; do
+    prefix="${ns// /_}"
+    if [[ "${base,,}" == "${prefix,,}"_* ]]; then
+      offset=$(( ${#prefix} + 1 ))
+      printf '%s:%s' "$ns" "${base:$offset}"
+      return 0
+    fi
+  done
+  printf '%s' "$base"
+}
+
 count=0
 for file in /seed/*.wiki; do
   [ -e "$file" ] || continue
   base="$(basename "$file" .wiki)"
   # Drop the "NNNN-" ordering prefix; it only orders the files.
-  title="${base#[0-9][0-9][0-9][0-9]-}"
+  title="$(to_title "${base#[0-9][0-9][0-9][0-9]-}")"
   cp "$file" "$work/$title.wiki"
   count=$((count + 1))
 done
