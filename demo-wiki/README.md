@@ -18,8 +18,8 @@ cd demo-wiki
 ```
 
 That is the one command. It starts the database, installs MediaWiki on the first
-run, applies the demo password policy, starts the wiki, creates or refreshes the
-demo accounts, imports every `seed/*.wiki` page and wires the Main Page. It is
+run, applies the demo settings, starts the wiki, creates or refreshes the demo
+accounts, imports every `seed/*.wiki` page and wires the Main Page. It is
 idempotent, so running it again is safe.
 
 Then open <http://localhost:12349/>.
