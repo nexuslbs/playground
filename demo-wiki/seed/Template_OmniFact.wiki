@@ -1,0 +1,70 @@
+<noinclude>
+{{OmniFact}} is the reusable fact box used by the article pages of this demo
+wiki. It renders one small table row per named parameter, with a positional
+fallback for the fact itself.
+
+'''Usage:'''
+
+<pre>{{OmniFact|what=base bundle + web app bundle|where=the workstation service|status=active|source=Projects/Omniagent/Workstation-Standard-Config.md}}</pre>
+
+The positional form is accepted too:
+
+<pre>{{OmniFact|The registry is the single source of truth}}</pre>
+
+Every parameter is optional; an omitted one renders its placeholder.
+</noinclude><onlyinclude>{| class="wikitable"
+|-
+! Fact
+| {{{what|{{{1|unspecified}}}}}}
+|-
+! Where
+| {{{where|unspecified}}}
+|-
+! Status
+| {{{status|unknown}}}
+|-
+! Source page
+| {{{source|not recorded}}}
+|}</onlyinclude><noinclude>
+
+== Documentation ==
+
+{| class="wikitable"
+|-
+! Parameter !! Meaning !! Default
+|-
+| <code>1</code> || Positional fallback for the fact, used when <code>what</code> is omitted || <code>unspecified</code>
+|-
+| <code>what</code> || The fact this box states || <code>unspecified</code>
+|-
+| <code>where</code> || Where the fact applies || <code>unspecified</code>
+|-
+| <code>status</code> || The fact's status, for example <code>active</code>, <code>shipped</code> or <code>retired</code> || <code>unknown</code>
+|-
+| <code>source</code> || The omniagent wiki path the fact derives from || <code>not recorded</code>
+|}
+
+The box is rendered with <code><nowiki>{{OmniFact|...}}</nowiki></code> in an
+article; the documentation you are reading is wrapped in
+<code>&lt;noinclude&gt;</code> and the box itself in
+<code>&lt;onlyinclude&gt;</code>, so only the table is transcluded.
+
+== Used by ==
+
+* [[Workstation Standard Config]]
+* [[Models Yml]]
+* [[Trinity Deploy]]
+* [[Secrets Store]]
+* [[Workstation Compat Layer]]
+* [[Omniagent API]]
+* [[Redaction]]
+* [[Container Mount Map]]
+* [[Deployment Checklist]]
+* [[Plugin Tool Awareness]]
+* [[Backup and Restore]]
+* [[Workstation Task Post Mortem]]
+
+[[Category:Templates]]
+</noinclude>
+
+''Source: omniagent wiki Projects/Omniagent/Workstation-Standard-Config.md''

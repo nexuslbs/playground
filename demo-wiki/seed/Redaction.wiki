@@ -1,0 +1,91 @@
+'''Redaction''' is the pluggable tool that scrubs secrets out of messages and
+tool output before delivery. Since the extraction, core no longer redacts secrets
+itself: a global setting names the MCP tool that performs redaction, and the
+default empty value means '''no redaction at all'''.
+
+== Architecture ==
+
+* Core's former <code>src/safety.rs</code> was deleted; there are no
+  <code>crate::safety</code> references left.
+* A global setting <code>redaction_tool</code> in the general category defines
+  which MCP tool performs redaction. The default <code>""</code> passes messages
+  and tool output through unchanged.
+* The setting is wired into the agent configuration and the writable settings
+  keys, so <code>PUT /settings</code> works and the option is surfaced in the UI.
+* The invocation point is <code>enqueue_delivery</code>: when the setting is
+  empty the content is delivered unchanged; when set, core invokes the configured
+  tool with <code>{"text": &lt;content&gt;}</code> and '''fails open''' on error,
+  because a redaction error must never break delivery.
+
+{{OmniFact
+|what=pluggable secret redaction via the redaction_tool setting
+|where=the delivery path in core, the redaction plugin in omni-plugins
+|status=complete and approved
+|source=Reference/Omniagent/Redaction.md
+}}
+
+== The redaction plugin ==
+
+The shipped plugin is a Python MCP plugin exposing the bare tool name
+<code>redact</code>; the agent qualifies it as
+<code>redaction__redact</code> through the
+<code>{plugin}__{tool}</code> convention. It takes the text to redact and an
+optional mask, and returns the redacted string. It replicates the exact patterns
+formerly hardcoded in core, for behavior parity:
+
+{| class="wikitable"
+|-
+! Pattern class !! Example shape
+|-
+| API keys || a key that starts with the common provider prefix
+|-
+| JSON web tokens || a three-part token beginning with <code>eyJ</code>
+|-
+| Connection strings || <code>postgres://</code> or <code>mysql://</code> URLs
+|-
+| Cloud access keys || access key ids with the AWS four-letter prefix
+|-
+| Private keys || a PEM block between its BEGIN and END markers
+|-
+| Chat tokens || a token with the Slack <code>xox</code> prefix
+|-
+| Long base64 blobs || long base64-ish strings
+|}
+
+Pseudo-matches shorter than 8 characters are skipped. The default mask is
+<code>[REDACTED &lt;type&gt;]</code>, and the mask is overridable per call.
+
+A name-prefix pitfall was fixed here: the first version exposed the tool as
+<code>redaction_redact</code> (double-prefixed), so the delivery path split it
+into server <code>redaction</code> plus tool <code>redact</code>, failed with
+<code>Unknown tool: redact</code>, and fell back to delivering the secret
+unchanged. Exposing the bare tool name fixed it.
+
+== Test coverage ==
+
+A dedicated deployment test group posts a fake secret to a test channel and
+asserts both branches:
+
+# with <code>redaction_tool</code> empty, the delivered reply is unchanged;
+# with <code>redaction_tool</code> set, the secret is replaced by the mask.
+
+The test restores the setting afterwards. The group passed first in the dev
+stack and then as part of the full suite.
+
+== Relationship to the secrets store ==
+
+Redaction protects content that is '''already in flight'''. The base32 secret and
+full enrollment URIs are secrets in their own right and belong only in the
+[[Secrets Store]]; a short base32 value or a six-to-eight digit code is not
+matched by the default patterns, so the agent itself must not echo them. Never
+commit an enrollment URI, a base32 secret or an enrollment JSON to any repo.
+
+== See also ==
+
+* [[Secrets Store]] - where secret values and TOTP enrollments live
+* [[Plugin Tool Awareness]] - the <code>{plugin}__{tool}</code> naming rule and
+  the empty-by-default delegation pattern this setting follows
+
+[[Category:Omniagent]]
+
+''Source: omniagent wiki Reference/Omniagent/Redaction.md''

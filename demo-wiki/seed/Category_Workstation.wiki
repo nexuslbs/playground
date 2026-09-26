@@ -1,0 +1,30 @@
+'''Category:Workstation''' collects the demo pages whose subject is the
+workstation service of the stack and the operations around it: its standard
+configuration and plugin set, the deployment and release cycle, the container
+mount map, the backup and restore flow, and the compatibility seam the plugin set
+sits on.
+
+These pages are derived from the omniagent wiki under
+<code>Projects/Omniagent/</code> and <code>Reference/Omniagent/</code>. Each page
+ends with the exact source path it came from.
+
+== Members ==
+
+* [[Workstation Standard Config]] - the active, disabled and overridden plugin rows
+* [[Trinity Deploy]] - the three-task Omniagent release cycle
+* [[Workstation Compat Layer]] - the native plugin set and the retired shim
+* [[Container Mount Map]] - host and container paths, and their translation
+* [[Deployment Checklist]] - the compose deployment steps
+* [[Backup and Restore]] - the toolbox backup, checkpoint and restore flow
+
+== Related categories ==
+
+* [[:Category:Omniagent|Category:Omniagent]] - the Omniagent platform pages
+* [[:Category:Templates|Category:Templates]] - the reusable page shapes
+
+== See also ==
+
+* [[Secrets Store]] - the credential names the workstation service resolves
+* [[Template:OmniFact]] - the fact box used across these pages
+
+''Source: omniagent wiki Projects/Omniagent/Workstation-Standard-Config.md and Projects/Omniagent/Trinity-Deploy.md''

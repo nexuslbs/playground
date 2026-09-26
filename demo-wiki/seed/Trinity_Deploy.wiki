@@ -1,0 +1,82 @@
+'''Trinity Deploy''' is the full release of an Omniagent version from a single
+operator message, ''"Trinity Deploy of Omniagent in version X.Y.Z"''. The handler
+does '''not''' run the pipeline itself: it creates '''three chained omnidev kanban
+tasks''' that run in order, then reports the task ids.
+
+== The three tasks ==
+
+{| class="wikitable"
+|-
+! # !! Task title pattern !! Purpose
+|-
+| A || Run deploy.py dev successfully (release cycle vX.Y.Z prerequisite) || Dev-mode deploy to green in the omnidev dev environment.
+|-
+| B || deploy.py hybrid: commit and push omni repos, tag omni-deployer vX.Y.Z and push to trigger CI || The release: hybrid run, commit and push, tag, CI trigger.
+|-
+| C || Post-hybrid vX.Y.Z: wait for CI, back up production, validate on omnistable, then stop the three stacks || Release validation on the omnistable deployment.
+|}
+
+Dependencies are recorded with <code>kanban_add-kanban-dependency</code>:
+'''B depends on A''', '''C depends on B'''.
+
+{{OmniFact
+|what=three chained release tasks (dev, hybrid, post-hybrid)
+|where=the omnidev kanban board
+|status=in use
+|source=Projects/Omniagent/Trinity-Deploy.md
+}}
+
+== Task A - deploy dev ==
+
+# Run <code>deploy.py dev</code> end-to-end against the omnidev dev environment.
+# All deploy stages complete, the dev stack healthy, integration tests pass.
+# Commit and push only if a repo needs a deploy, seed or test-only change. Do NOT
+# bump versions or tag anything.
+
+== Task B - hybrid and tag ==
+
+# Run <code>deploy.py hybrid</code> to successful completion.
+# On success, commit and push the changed omni repos to main and verify local
+# equals origin/main for each.
+# Tag omni-deployer with <code>vX.Y.Z</code> and push the tag, which triggers CI.
+
+The version bumps must be pushed '''before''' the hybrid run, because hybrid
+Step 0.4 has a CI-consistency preflight that fails fast on a dirty or unpushed
+repo. The tag is pushed '''after''' the run succeeds. The deploy script itself
+never runs <code>git commit</code>, <code>git tag</code> or <code>git push</code>.
+
+== Task C - post-hybrid ==
+
+# Wait for the CI run triggered by the tag to finish; fix and re-release until green.
+# As soon as CI is green, force-run the PRODUCTION cron task <code>daily-backup</code>
+# with <code>{"force": true}</code>.
+# Bring omnistable up at the '''current production version''', then restore the
+# database from that up-to-date backup.
+# Upgrade omnistable to the release version and verify it answers end to end.
+# Stop the <code>omnidev</code>, <code>omnideploy</code> and <code>omnistable</code>
+# stacks after the last step.
+
+A cron or backup failure is '''not''' a blocker: the restore and every remaining
+step still run, using the newest available backup, and the failure is reported.
+The production <code>omni-stack</code> project is '''never''' stopped.
+
+== Run pattern and safety ==
+
+* Develop and deploy ONLY in the omnidev, dev and omnistable environments.
+* Run the python process directly inside the always-available production
+  omniagent container, never in a container the deploy itself tears down.
+* The production image already ships docker CLI and compose plugin, python3,
+  git and node/npm, and mounts the docker socket.
+* Never run <code>up</code>, <code>down</code>, <code>restart</code>,
+  <code>stop</code> or <code>recreate</code> against the <code>omni-stack</code>
+  project; production changes only through the release pipeline.
+
+== See also ==
+
+* [[Deployment Checklist]] - the compose deployment steps this cycle assumes
+* [[Backup and Restore]] - the backup artifacts the restore step consumes
+* [[Workstation Standard Config]] - a peer project page in this wiki
+
+[[Category:Workstation]]
+
+''Source: omniagent wiki Projects/Omniagent/Trinity-Deploy.md''

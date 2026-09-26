@@ -1,0 +1,51 @@
+This is the talk page for '''[[Workstation Standard Config]]'''. Use it to
+discuss the plugin rows, the disabled rows and the deliberate decisions recorded
+on the article page.
+
+== The disabled-rows table reads as a decision list, not a rationale ==
+
+The article lists several rows as "off" but only some carry a real reason. The
+<code>skill-badge</code> row says "presentation only", which does not explain why
+the row ships disabled in the base bundle rather than being removed. Could the
+table get a column that separates '''why the row exists at all''' from '''why it
+is off in this deployment'''? That would stop a reader from copying a
+deployment-specific override as if it were an upstream decision.
+
+: I agree the two questions are different. The base bundle keeps the row so a UI
+  profile can re-enable it; the deployment leaves it off because the workstation
+  facade never renders badges. I would support a third column, but let us keep it
+  short or the table stops being scannable. ~~~~
+
+== D1 is the only decision with a live health probe ==
+
+D1 records that web search is not provisioned and that the health probe answers
+with a missing-service error. The other decisions do not name an observable check
+in the same way. If every decision carried the one command that proves its
+current state, this page would be much easier to audit after a configuration
+change. [[User:Demo-Editor|Demo-Editor]] 09:14, 27 September 2026 (UTC)
+
+: That is a fair request, and the missing-service probe is exactly the pattern to
+  copy. One caution: a probe name can drift from the route it calls, so any probe
+  added here should quote the raw response instead of paraphrasing it. ~~~~
+
+: A second caution from the same section: the article says re-enabling the
+  harness host rows is not sufficient, because the contract is a service, not a
+  row. A probe that only checks the row list would give a false green. The right
+  probe calls the capability and reads the error code. [[User:Demo-Editor|Demo-Editor]] 09:31, 27 September 2026 (UTC)
+
+== Move the role patch example to its own page? ==
+
+D4 shows a three-row role patch inline. It is useful, but it is really a worker
+setup recipe rather than a workstation standard-config fact. Should it move to a
+page of its own, and leave D4 as a short pointer? ~~~~
+
+: I would keep a one-line summary and move the full patch. The patch is the part
+  most likely to be copied, and it is the part most likely to go stale. ~~~~
+
+== See also ==
+
+* [[Workstation Standard Config]] - the article under discussion
+* [[Workstation Compat Layer]] - the seam the plugin rows load onto
+* [[Template:OmniFact]] - the fact box used on the article
+
+''Source: omniagent wiki Projects/Omniagent/Workstation-Standard-Config.md''

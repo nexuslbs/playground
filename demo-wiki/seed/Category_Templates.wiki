@@ -1,0 +1,21 @@
+'''Category:Templates''' collects the reusable page shapes of this demo wiki.
+A template lives in the <code>Template:</code> namespace and is rendered with
+double braces; its parameters are filled at the call site.
+
+== Members ==
+
+* [[Template:OmniFact]] - the small fact box used by the article pages
+
+== Why templates matter here ==
+
+The demo wiki mirrors the omniagent wiki, where the same facts (which rule is
+active, where it lives, whether it shipped) recur across many pages. Putting that
+recurring row in one template keeps the article bodies about the subject instead
+of about the markup.
+
+== See also ==
+
+* [[:Category:Omniagent|Category:Omniagent]] - the Omniagent platform pages
+* [[:Category:Workstation|Category:Workstation]] - the workstation service pages
+
+''Source: omniagent wiki Projects/Omniagent/Workstation-Standard-Config.md''

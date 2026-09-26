@@ -1,0 +1,104 @@
+'''Backup and Restore''' records the verified operations facts for the toolbox
+<code>backup</code>, <code>restore_backup</code> and <code>checkpoint</code>
+scripts. The scripts live in the toolbox service directory in the omni-root repo
+and are also baked into the toolbox image; the baked copy can lag the repo copy.
+
+== Backup flow ==
+
+The backup script runs five steps plus a git-sync step:
+
+# Copy the environment file into the data credentials directory.
+# Dump the OmniAgent PostgreSQL database (custom format).
+# Dump the Mattermost PostgreSQL database.
+# Snapshot the Grafana SQLite database.
+# Sync the artifacts to object storage.
+# Git sync as the final step, through the omniagent sync endpoint.
+
+Restore runs the git sync as its '''first''' step, before any service is stopped.
+Both scripts guard on the agent container being up: when it is not running they
+log <code>SKIPPING git sync</code> instead of starting it just to sync. Sync
+errors are fail-soft - a warning, and the backup or restore continues.
+
+{{OmniFact
+|what=toolbox backup, restore and checkpoint scripts
+|where=the toolbox service and the object-storage bucket
+|status=verified end to end
+|source=Projects/Omniagent/Backup-and-Restore.md
+}}
+
+== Object storage ==
+
+{| class="wikitable"
+|-
+! Fact !! Detail
+|-
+| Credentials || <code>S3_ACCESS_KEY</code> and <code>S3_SECRET_KEY</code> in the stack environment file
+|-
+| Write capability || The key CAN write; a full upload was verified file by file
+|-
+| Expected 403 || Listing the bucket root is denied even with a write key; the project prefix is fully writable and readable
+|-
+| Authorization check || Call the provider authorization API and read the granted capabilities
+|}
+
+== Grafana caveat ==
+
+The Grafana image ships no SQLite binary, so an old step that shelled out to
+<code>sqlite3</code> inside the container exited 127 silently and produced no
+snapshot while the container itself stayed healthy. The fix copies the database
+file out of the container and snapshots it with the toolbox python3 SQLite backup
+API. The fix is in the repo copy, and the running image still executes the old
+baked script until the next toolbox image build, so run the fixed copy directly
+until then.
+
+== Checkpoint ==
+
+The checkpoint script writes file data and a compressed database dump to a dated
+prefix in object storage. A vector-store snapshot step is skipped when that
+service is not deployed in the compose stack. Two caveats: the script exits 0
+even when a copy step errors, so check the output per step, and two concurrent
+runs race on the same temporary dump file - never launch two at once.
+
+== Scheduled backups ==
+
+The backup and checkpoint cron variables in the stack environment file are empty,
+so no backup or checkpoint runs on a schedule. The git-sync step inside the backup
+script is the only automated git persistence.
+
+== Restoring a production dump into the dev stack ==
+
+{| class="wikitable"
+|-
+! Step !! Fact
+|-
+| Source dump || The production PostgreSQL dump under the live data backups directory
+|-
+| Trap || A small seed dump under the workspace checkout is NOT production; restoring it silently yields a toy database
+|-
+| Commands || Stop the dev agent, recreate the database, restore with a matching-version client, start the agent again
+|-
+| Client version || The restore MUST run in a container whose client matches the dump archive version; an older client rejects it
+|-
+| Benign error || One unrecognized configuration parameter can make the restore exit non-zero while the restore is actually complete
+|-
+| Verify || Count threads, messages, secrets and tasks in the dev database and compare against production scale
+|}
+
+After restoring into a stack with a fresh Mattermost, the Setup endpoint alone
+re-provisions its own team and channel, but any other channel bound in the
+channel configuration must still be created on the server and re-pointed; a
+restore that skips that reconciliation produces authorization errors on every
+post in those channels. See [[Container Mount Map]] for the source and live paths
+involved, [[Deployment Checklist]] for the deploy steps that surround a restore,
+and [[Trinity Deploy]] for the release cycle that consumes a forced production
+backup.
+
+== See also ==
+
+* [[Deployment Checklist]] - the deploy sequence that a restore follows
+* [[Container Mount Map]] - the host and container paths for the dumps
+* [[Trinity Deploy]] - the post-hybrid restore this procedure supports
+
+[[Category:Workstation]]
+
+''Source: omniagent wiki Projects/Omniagent/Backup-and-Restore.md''

@@ -1,0 +1,89 @@
+'''The Deployment Checklist''' lists every step required to deploy a new service
+with docker compose. Do NOT skip any of them.
+
+== Step 1 - verify the mount map ==
+
+Before writing any files, verify the container's volume mounts:
+
+<pre>
+docker inspect omni-stack-omniagent-1 --format '{{range .Mounts}}{{.Source}} -&gt; {{.Destination}}{{"\n"}}{{end}}'
+</pre>
+
+This tells you where your files will actually land. The critical point is that
+the filesystem tool writes to the container path, while the compose tool validates
+the host path; see [[Container Mount Map]] for the full table.
+
+== Step 2 - check port availability ==
+
+Do NOT use an in-container fetch to probe a host port: that only sees this
+container's network namespace, and a container on the host can occupy the port
+while staying invisible. Do use the compose tool to list the target project, and
+check whether another compose project already owns the port.
+
+== Step 3 - write files to paths reachable by compose ==
+
+{| class="wikitable"
+|-
+! Container path (filesystem tool) !! Host path (compose tool) !! Accessible to compose?
+|-
+| <code>/opt/workspace/...</code> || <code>/opt/workspace/...</code> || yes
+|-
+| <code>/opt/omni/...</code> || <code>/opt/workspace/omni-root/...</code> || yes, via the translated host path
+|-
+| <code>/app/...</code> || <code>/opt/workspace/omniagent/...</code> || yes
+|}
+
+{{OmniFact
+|what=compose deployment checklist
+|where=any new stack service
+|status=standing rules
+|source=Projects/Omniagent/Deployment-Checklist.md
+}}
+
+== Step 4 - create the compose file ==
+
+The compose file must use a valid image (pulled from a registry or built from a
+Dockerfile), map the container port to the target host port, and mount volumes
+correctly with absolute or verified relative paths.
+
+== Step 5 - deploy ==
+
+Writing the compose file does NOT deploy it. Always call the compose tool with
+<code>command="up"</code> and detached arguments:
+
+<pre>
+docker_compose(project_dir="&lt;host-abs-path&gt;", command="up", args="-d")
+</pre>
+
+The project directory is the HOST path where the compose file resides. The
+service argument is only needed for <code>exec</code>, <code>stop</code> and
+<code>restart</code>, not for <code>up</code> or <code>down</code>.
+
+== Step 6 - verify ==
+
+Check that the service is running with <code>command="ps"</code>, then verify it
+responds - for example an HTTP header request from inside the composed
+container. A successful <code>up -d</code> can still hide a failed port binding,
+so always verify with both the process list and a health check.
+
+== Anti-patterns ==
+
+* '''Scope creep during deployment''': do not upgrade infrastructure while
+  deploying; that is a separate task.
+* '''Not verifying after compose''': the port binding can fail silently.
+* '''Writing the compose file without deploying''': the file is inert until
+  <code>up</code> runs.
+* '''Probing a host port from inside the container''': the network namespace
+  hides other projects.
+* '''Calling the compose tool by the wrong name''': the registered bare name is
+  <code>compose</code> is NOT valid; use the registered tool name.
+
+== See also ==
+
+* [[Container Mount Map]] - the path translation this checklist depends on
+* [[Trinity Deploy]] - the release cycle that assumes these deploy steps
+* [[Backup and Restore]] - the backup and restore flow that follows a deploy
+
+[[Category:Workstation]]
+
+''Source: omniagent wiki Projects/Omniagent/Deployment-Checklist.md''

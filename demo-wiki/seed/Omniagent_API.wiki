@@ -1,0 +1,107 @@
+'''The Omniagent HTTP API''' is the core API served by the omniagent container on
+<code>localhost:8080</code>. The consolidated <code>builtin_omniagent-api</code>
+tool is ONE generic HTTP client against it, replacing the older
+<code>kanban_*</code> and <code>cron_*</code> plugin tools.
+
+== How to call the API ==
+
+<code>builtin_omniagent-api</code> takes three top-level arguments:
+
+* <code>method</code> (required): <code>GET</code>, <code>POST</code>,
+  <code>PATCH</code> or <code>DELETE</code>;
+* <code>path</code> (required): for example <code>/kanban/tasks</code>,
+  <code>/schedule</code>, <code>/api/plugins</code>;
+* <code>body</code> (optional): a JSON object for write methods.
+
+The base URL is derived internally - never pass it in the prompt. A malformed
+call returns the misleading <code>both 'method' and 'path' are required</code>,
+which looks like a broken route, so '''after any write that is supposed to create
+or change an entity, confirm it with a follow-up GET''' before reporting success.
+
+{{OmniFact
+|what=core HTTP API plus the generic builtin_omniagent-api client
+|where=localhost:8080 inside the omniagent container
+|status=in use
+|source=Reference/Omniagent/Omniagent-API.md
+}}
+
+== Endpoint map ==
+
+{| class="wikitable"
+|-
+! Family !! Example routes
+|-
+| Kanban || <code>GET/POST /kanban/tasks</code>, <code>PATCH /kanban/tasks/{id}/status</code>, <code>GET /kanban/tasks/{id}/history</code>
+|-
+| Schedule and cron || <code>GET/POST /schedule</code>, <code>PATCH /schedule/{id}</code>, <code>POST /schedule/{id}/run</code>
+|-
+| Plugins || <code>GET /api/plugins</code>, <code>POST /api/plugins/{type}/{source}/{name}/enable</code>
+|-
+| Actions || <code>GET/POST /actions</code>, <code>POST /actions/{id}/run</code>
+|-
+| Hooks || <code>GET/POST /hooks</code>, <code>POST /hooks/{id}/fire</code>
+|-
+| Channels || <code>GET /channels</code>, <code>GET /platforms</code>
+|-
+| Settings || <code>GET /settings</code>, <code>PUT /settings</code>
+|-
+| MCP || <code>GET /mcp/tools</code>, <code>POST /mcp/execute</code>
+|-
+| Database (read-only) || <code>POST /db/query</code>, <code>GET /db/tables</code>, <code>GET /db/columns</code>
+|}
+
+Plugin endpoints carry the <code>/api</code> prefix; kanban, schedule, hooks,
+actions, channels and settings do not.
+
+== Examples ==
+
+<pre>
+# List the kanban board
+builtin_omniagent-api(method="GET", path="/kanban/tasks")
+
+# Create a task in todo
+builtin_omniagent-api(method="POST", path="/kanban/tasks",
+    body={"title":"Fix login bug","status":"todo","board":"default","profile":"omni"})
+
+# Move a task to running
+builtin_omniagent-api(method="PATCH", path="/kanban/tasks/123/status", body={"status":"running"})
+
+# List plugins and enable one
+builtin_omniagent-api(method="GET", path="/api/plugins")
+builtin_omniagent-api(method="POST", path="/api/plugins/tools/bundled/fetch/enable")
+</pre>
+
+== Health and long-poll ==
+
+* <code>GET /health</code> returns JSON:
+  <code>{"status":"ok","version":"&lt;version&gt;","uptime":&lt;seconds&gt;}</code>.
+  The version is the release single source of truth, baked at build time.
+* <code>GET /kanban/tasks/{id}/wait?until=done,blocked&amp;timeout_s=900</code>
+  and the matching thread route long-poll a status change. The
+  <code>builtin_wait-for-status</code> tool wraps the same semantics; a timeout is
+  a status, not an error.
+
+== Tool resolution errors ==
+
+<code>POST /mcp/execute</code> resolves the tool '''before''' executing and
+answers a missing or blocked tool with a real status and an
+<code>error_code</code>, <code>remediation</code> and <code>suggestions[]</code>.
+The read-only database routes are owned by core and accept
+<code>SELECT</code> or <code>WITH</code> only, in a read-only transaction with a
+timeout and a row cap; a write attempt is rejected with
+<code>400 db_query_rejected</code>.
+
+A tool whose plugin is disabled answers with the plugin state rather than a
+generic failure; see [[Plugin Tool Awareness]] for how to read that state. The
+secrets routes used for <code>$secret:</code> references are listed in
+[[Secrets Store]].
+
+== See also ==
+
+* [[Secrets Store]] - the secrets routes and the resolution rules
+* [[Plugin Tool Awareness]] - why a tool can be absent from the registry
+* [[Backup and Restore]] - the backup flow that calls the git-sync endpoint
+
+[[Category:Omniagent]]
+
+''Source: omniagent wiki Reference/Omniagent/Omniagent-API.md''

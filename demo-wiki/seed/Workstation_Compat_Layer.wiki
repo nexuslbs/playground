@@ -1,0 +1,85 @@
+'''The workstation compat layer''' is the seam between the
+<code>nexuslbs/deepseek-harness</code> (dsh) runtime and the plugin set loaded
+into the workstation service. It was documented and hardened in
+2026-09-25 and its adapter was retired the next day.
+
+== Decision (recorded) ==
+
+'''RETIRED - NO SHIM (operator reversal, 2026-09-26).''' The
+<code>workstation-http</code> compat adapter was deleted. The plugins are now
+proper native dsh plugins with typed tool definitions and the harness credentials
+service; workstation is the only implementation, with no workbench support. The
+HTTP surface the adapter used to own became a minimal native dsh plugin,
+<code>plugins/http-surface</code>.
+
+{{OmniFact
+|what=native dsh plugin set plus a minimal http-surface facade
+|where=the workstation service and workstation-plugins
+|status=retired adapter, native plugins shipped
+|source=Projects/Omniagent/Workstation-Compat-Layer.md
+}}
+
+== The seam in one paragraph ==
+
+The harness was loaded with the plugin package set, which had been written
+against the workbench core cordis API. The harness API differed in exactly two
+code-level places, both once closed by the compat layer; everything else
+(<code>ctx.effect</code>, service lookup via <code>ctx.get</code> and
+<code>ctx.&lt;svc&gt;</code>) was already cordis-native. The harness also shipped
+no workbench-core HTTP surface, so the adapter owned the
+<code>/health</code> and <code>POST /api/tool/call</code> routes too.
+
+== Contract table ==
+
+{| class="wikitable"
+|-
+! Contract !! Workbench reference !! dsh !! Verdict
+|-
+| cordis runtime || cordis 4.0.0-rc.10 || vendored cordis 4.0.4 || compatible - same 4.x lineage
+|-
+| plugin module shape || manifest plus <code>name</code> / <code>inject</code> / <code>apply(ctx, config)</code> || <code>name</code> / <code>inject</code> / <code>apply(ctx)</code> || compatible entry convention
+|-
+| tool registration || <code>registerTool({name, handler, parameters, description})</code> || <code>register(defineTool({name, description, parameters, output, execute}))</code> || RETIRED - plugins register natively
+|-
+| tool-call HTTP body || <code>POST /api/tool/call</code> with <code>{"tool","params"}</code> || no such route in the harness || RETIRED - the native facade owns the same wire contract
+|-
+| credentials || file backend at a fixed path || <code>$DSH_HOME/.credentials.yaml</code> plus a provider-managed store || RETIRED - plugins resolve through <code>ctx.credentials</code>
+|-
+| plugin discovery || manifest plus a roster || cordis loader entries via <code>--patch</code> || different, and permitted by the operator
+|}
+
+== What the adapter used to bridge ==
+
+# '''Tool registration shim''' - re-installed <code>registerTool</code> as a thin
+   adapter that converted the parameter map to JSON Schema, supplied the required
+   default output, and forwarded to the real registry.
+# '''Credentials file fallback''' - the harness already ships a credentials
+   service, so the adapter augmented it instead of shadowing it: a reference the
+   harness could not resolve fell back to the operator file, and an unresolved
+   reference returned the harness result.
+# '''HTTP facade''' - <code>GET /health</code> plus <code>/healthz</code> and
+   <code>/api/tools</code>, and <code>POST /api/tool/call</code>, with raw errors
+   returned verbatim.
+
+== Native layout (2026-09-26) ==
+
+* <code>workbench-plugins/definitions/tools.ts</code> and
+  <code>definitions/credentials.ts</code> own the dsh-native consumer contracts.
+* Every tool registers <code>ctx.tools.register(defineTool({...}))</code>;
+  <code>plugins/http-surface</code> is the minimal native dsh HTTP surface.
+* <code>omni-root/config/workstation.yml</code> is the run-time
+  <code>--patch</code> overlay; external-service targets live there, never in
+  code or in a plugin repo.
+* The workstation image is browser-free, ships no email client and bundles no
+  capability plugins; see [[Container Mount Map]] for where the external
+  checkouts are mounted.
+
+== See also ==
+
+* [[Workstation Standard Config]] - the rows this plugin set activates
+* [[Plugin Tool Awareness]] - how a tool's absence maps to its plugin state
+* [[Container Mount Map]] - the mounts the native plugins rely on
+
+[[Category:Workstation]]
+
+''Source: omniagent wiki Projects/Omniagent/Workstation-Compat-Layer.md''

@@ -1,0 +1,85 @@
+'''Plugin and Tool Awareness''' is the rule that agent tools come from plugins
+whose state can change at runtime, so the registry must be checked and never
+assumed. Absence of a tool from the current toolset usually means its plugin is
+'''disabled''', not that the tool was removed or that docs naming it are stale.
+
+== Check the registry ==
+
+* Agent tools are provided by plugins of type tool, platform or provider; each
+  can be enabled, disabled or not found.
+* The registry is reachable through the plugin manager list tool or through
+  <code>GET /api/plugins</code>; see [[Omniagent API]] for the route map.
+* Enable a disabled plugin at
+  <code>POST /api/plugins/tools/&lt;source&gt;/&lt;name&gt;/enable</code> and
+  disable it at the matching <code>/disable</code> route. Use the registry source
+  field to pick the URL segment (built-in, bundled or remote).
+
+{{OmniFact
+|what=runtime plugin and tool registry awareness
+|where=the omniagent plugin registry
+|status=standing rule
+|source=Reference/Omniagent/Plugin-Tool-Awareness.md
+}}
+
+== Filesystem plugin ==
+
+The built-in filesystem plugin exposes read, write, list, search and info tools.
+Reads are unrestricted; writes are sandboxed to the workspace directory plus the
+configured data, profiles and plugins subdirectories. The configuration file is
+not agent-writable. The plugin history is a cautionary tale: it was disabled
+after a wedge caused by synchronous filesystem handlers on async workers, the
+root cause was fixed in core, and the plugin was re-enabled on the live registry.
+Do NOT run a recursive glob search from the filesystem root: it wedges the
+server.
+
+== Tool priority ==
+
+Purpose-built beats generic: use the filesystem plugin for file operations, the
+search and database tools for discovery, and docker or compose only to run code
+and builds. Shelling out to a container for grep, listdir or cat is a known waste
+and more privileged than needed.
+
+== Role separation ==
+
+{| class="wikitable"
+|-
+! Role !! Owns
+|-
+| Executor || Implementation plus minimal relevant evidence: compile or build, lint, the single most relevant test. No full verification batteries.
+|-
+| Tester || Verification: the full relevant suites, real run output and the PASS gate. An executor's minimal run never replaces the tester's own run.
+|}
+
+== Naming and delegation rules ==
+
+* Tool names are runtime-qualified as <code>{plugin}__{tool}</code> and must
+  match what the plugin ACTUALLY registers. Never call a plugin a tool, and note
+  that a plugin can be installed under another name, so only the qualified runtime
+  name is stable.
+* Core setting text must be consumer-agnostic: it must not name a specific
+  stack's hooks or dashboard.
+* A setting whose only job is to tell the agent WHICH tool to use must NOT exist.
+  As long as the tool is enabled and the profile is permitted, the instruction
+  belongs in the template, skill or wiki.
+* A real credential in a header stays a secret reference, never a literal value;
+  see [[Secrets Store]].
+* Provider-specific response quirks are delegated to a tool behind an
+  empty-by-default setting, following the same shape as [[Redaction]], instead of
+  branching on the provider inside core.
+
+== Drift guard ==
+
+The registry default for the git-sync setting must equal the registered tool name,
+and the check computes the qualified name from the plugin manifest at test time
+rather than comparing against a hard-coded literal. A live gate confirms
+<code>GET /settings</code> returns the qualified value.
+
+== See also ==
+
+* [[Redaction]] - the empty-by-default delegation pattern this page generalizes
+* [[Omniagent API]] - the registry and settings routes referenced above
+* [[Workstation Compat Layer]] - the plugin API the harness must satisfy
+
+[[Category:Omniagent]]
+
+''Source: omniagent wiki Reference/Omniagent/Plugin-Tool-Awareness.md''

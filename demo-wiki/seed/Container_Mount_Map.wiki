@@ -1,0 +1,76 @@
+'''The Container Mount Map''' records which host directories the omniagent
+container mounts and how the paths translate. The <code>/opt/workspace</code>
+paths are the SAME inside and outside the container; the data directory
+(<code>/opt/omni</code>) is the exception and maps to the omni-root checkout on
+the host.
+
+== Current mount map ==
+
+{| class="wikitable"
+|-
+! Host path !! Container path !! Purpose !! Notes
+|-
+| <code>/opt/workspace</code> || <code>/opt/workspace</code> || Project files || Same path, no translation
+|-
+| <code>/opt/workspace/omni-root</code> || <code>/opt/omni</code> || data_dir: config, profiles, wiki, skills, memories, templates || Translates: <code>/opt/omni/...</code> equals <code>/opt/workspace/omni-root/...</code>
+|-
+| <code>/opt/workspace/omniagent</code> || <code>/app</code> || Source code and compiled binaries || Translates: <code>/app/...</code> equals <code>/opt/workspace/omniagent/...</code>
+|-
+| <code>/var/run/docker.sock</code> || <code>/var/run/docker.sock</code> || Docker socket for the compose tool || Same path
+|}
+
+{{OmniFact
+|what=container mount map and path translation rules
+|where=the omniagent container
+|status=verified against a live container
+|source=Projects/Omniagent/Container-Mount-Map.md
+}}
+
+== Path translation rules ==
+
+* <code>/opt/workspace/&lt;project&gt;</code> is the same path on the host and in
+  the container, so a compose call with that project directory works as-is.
+* <code>/opt/omni/...</code> in the container is
+  <code>/opt/workspace/omni-root/...</code> on the host.
+* <code>/app/...</code> in the container is
+  <code>/opt/workspace/omniagent/...</code> on the host.
+* When deploying via the compose tool, use the container path; when checking host
+  files, translate with this map. Never pass <code>/opt/omni/...</code> as a
+  compose project directory: that tool validates the host path.
+
+The mismatch matters when writing files: the filesystem tool writes to the
+container path, but the compose tool validates the host path. Write files to a
+container path whose corresponding host path is under <code>/opt/workspace</code>
+so compose can find them; see [[Deployment Checklist]] for the deploy sequence
+that depends on this rule.
+
+== Verify, never trust an old doc ==
+
+Older documentation claimed a different layout and is wrong for the current
+stack. Verify with:
+
+<pre>
+docker inspect &lt;omniagent-container&gt; --format '{{range .Mounts}}{{.Source}} -&gt; {{.Destination}}{{"\n"}}{{end}}'
+</pre>
+
+== The live directory is its own git repository ==
+
+<code>/opt/omni</code> is not just a file copy: it has its own <code>.git</code>
+(branch main, origin the omni-root repository) that can carry local commits on
+top of the pushed history. The workspace clone <code>/opt/workspace/omni-root</code>
+is the clean checkout used for repo operations. When editing compose files or
+service configs that affect the running stack, apply the change to '''both'''
+copies - the git checkout and the live directory - then commit and push from the
+checkout. See [[Backup and Restore]] for the git-sync step that keeps the live
+directory aligned, and [[Workstation Compat Layer]] for the overlay file that
+lives under the omni root.
+
+== See also ==
+
+* [[Deployment Checklist]] - the deploy steps that consume this map
+* [[Workstation Compat Layer]] - the run-time overlay under the omni root
+* [[Backup and Restore]] - the backup flow and its git-sync step
+
+[[Category:Workstation]]
+
+''Source: omniagent wiki Projects/Omniagent/Container-Mount-Map.md''

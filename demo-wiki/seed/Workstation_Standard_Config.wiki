@@ -1,0 +1,111 @@
+'''The Workstation standard config''' defines which plugins the workstation
+service of the stack (the [[Workstation Compat Layer|workstation]] service, which
+is dsh) activates out of the box, which rows are deliberately disabled, and which
+overrides the user repo applies.
+
+== Overview ==
+
+The service boots the shipped '''web profile'''; the standard set is the
+'''base bundle + web app bundle''', and the user-repo overlay adds the
+workstation rows. Row ids are read from the bundles, not re-derived.
+
+{{OmniFact
+|what=base bundle + web app bundle + workstation overlay
+|where=the workstation service bootstrap
+|status=active
+|source=Projects/Omniagent/Workstation-Standard-Config.md
+}}
+
+== What is active out of the box ==
+
+The service starts with:
+
+<pre>
+node /harness/apps/cli/lib/bin.js --profile web --patch "$WORKSTATION_CONFIG_FILE" --no-open --port 0
+</pre>
+
+The '''base''' bundle carries 92 rows, including <code>tool-plugin-manager</code>,
+<code>timer</code>, <code>llm</code>, <code>session</code>, <code>agent</code>,
+<code>jobs</code>, <code>credentials</code>, <code>subprocess</code>,
+<code>sandbox</code>, <code>tool-bash</code>, <code>tool-fs</code>,
+<code>tool-fs-search</code>, <code>skill</code>, <code>subagent</code>,
+<code>ptc-runtime</code>, <code>workflow-ptc</code>, <code>tool-web</code> and
+<code>agent-loop</code>. The '''headless''' bundle adds 5 rows and is the one-shot
+runner a worker profile composes on top of base.
+
+The '''user-repo overlay''' (the workstation rows) adds the capability plane:
+<code>http-surface</code>, <code>general-service-impl</code>,
+<code>shell-impl</code>, <code>docker-impl</code>, <code>capabilities-impl</code>,
+<code>himalaya-impl</code>, <code>email-himalaya</code>, <code>sms-twilio</code>,
+<code>totp-rfc6238</code>, <code>email-tools</code>, <code>sms-tools</code>,
+<code>totp-tools</code>, <code>browser-use-impl</code>,
+<code>browser-use-playwright</code>, <code>browser-use-tools</code>,
+<code>web-search-tools</code> and <code>web-session</code>.
+
+== Deliberately disabled (and why) ==
+
+{| class="wikitable"
+|-
+! Row !! State !! Rationale
+|-
+| <code>hmr</code> || off || host-only reload; a server or one-shot boot has no host to reload
+|-
+| <code>tool-ralph</code> || off || fresh-agent iteration loop, human-gated
+|-
+| <code>config-editor</code>, <code>plugin-manager</code> || off without profile context || gated on the interactive profile context
+|-
+| <code>skill-badge</code> || off || presentation only
+|-
+| <code>session-query-sqlite</code> || search off || keeps no SQLite full-text index
+|-
+| <code>session-telemetry-otel</code> || feedback-only || the process opts out with <code>DSH_TELEMETRY_DISABLED</code>
+|-
+| <code>web</code>, <code>web-fetch-http</code>, <code>tool-web</code> || disabled by the web app bundle || the Web UI composes search and fetch per agent preset
+|}
+
+== Deliberate decisions ==
+
+* '''D1''' - web search is not provisioned: the capability consumer resolves the
+  <code>web-search@1</code> service at call time, and the health probe answers
+  <code>missing-service</code> until a provider row exists.
+* '''D2''' - credentials are names, never values: <code>DEEPSEEK_API_KEY</code>
+  and the other references are resolved at call time by the credentials service;
+  see [[Secrets Store]].
+* '''D3''' - the facade is the capability plane, the worker run is the agent
+  plane. The harness agent tool family is NOT reachable through the facade.
+* '''D4''' - the worker sandbox is a role decision; each role ships a dsh profile
+  patch with the sandbox, approval and permission rows.
+* '''D5''' - the email wiring needs the omni-root checkout inside the
+  <code>workstation-tools</code> container, so that service binds
+  <code>/opt/omni</code> read-only (see [[Container Mount Map]]).
+
+== Effective surface ==
+
+<pre>
+GET /health   {"status":"ok","service":"workstation","uptime_s":1136,"tools":15}
+GET /api/tools {"status":"ok","tools":["sms numbers","sms list","sms get","sms code",
+  "totp list","totp code","email accounts","email list","email get","email code",
+  "email send","browser","web search","web search providers","session"]}
+</pre>
+
+The capability families are email, sms, totp, browser and web. The harness agent
+tools are reached by a '''worker profile''', not by the facade.
+
+== Open gaps ==
+
+# No agent-run entry on the facade.
+# Dev agent wiring: the remote plugin reports <code>not_found</code> in the dev stack.
+# A <code>web-search@1</code> provider is missing.
+# The model credential is not provisioned in the dev store.
+# <code>HIMALAYA_HERMES_PASSWORD</code> is not provisioned in the dev store.
+
+== See also ==
+
+* [[Models Yml]] - the provider and model definitions the service loads
+* [[Workstation Compat Layer]] - the seam between the harness and the plugin set
+* [[Workstation Task Post Mortem]] - what an over-specified workstation task cost
+* [[Secrets Store]] - where the credential names resolve
+
+[[Category:Workstation]]
+
+''Source: omniagent wiki Projects/Omniagent/Workstation-Standard-Config.md''

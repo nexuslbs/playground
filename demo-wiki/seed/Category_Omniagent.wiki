@@ -1,0 +1,29 @@
+'''Category:Omniagent''' collects the demo pages whose subject is the Omniagent
+platform itself: its HTTP API, its provider and model configuration, its secrets
+store and redaction behaviour, how it tracks plugins and tools, and the
+post-mortem of a task that went wrong.
+
+These pages are derived from the omniagent wiki under
+<code>Projects/Omniagent/</code> and <code>Reference/Omniagent/</code>. Each page
+ends with the exact source path it came from.
+
+== Members ==
+
+* [[Models Yml]] - provider and model overrides via <code>config/models.yml</code>
+* [[Secrets Store]] - the key/value store behind <code>$secret:NAME</code>
+* [[Omniagent API]] - the core HTTP endpoint map
+* [[Redaction]] - pluggable scrubbing of secrets from delivered content
+* [[Plugin Tool Awareness]] - runtime plugin state and the tool naming rule
+* [[Workstation Task Post Mortem]] - why one over-specified task never completed
+
+== Related categories ==
+
+* [[:Category:Workstation|Category:Workstation]] - the workstation service pages
+* [[:Category:Templates|Category:Templates]] - the reusable page shapes
+
+== See also ==
+
+* [[Workstation Standard Config]] - the service that loads these definitions
+* [[Template:OmniFact]] - the fact box used across these pages
+
+''Source: omniagent wiki Projects/Omniagent/Models-Yml.md and Reference/Omniagent/Secrets-Store.md''

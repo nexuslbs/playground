@@ -1,0 +1,97 @@
+'''The Workstation Task Post Mortem''' records why the omnidev task
+<code>task_omnidev_workstation_new_board_channel</code> consumed roughly 16 hours
+and roughly 400 million prompt tokens over 29 executor threads and
+'''never completed'''.
+
+== Verdict ==
+
+The premise that the harness is basically the same cordis runtime as the
+workbench, so it should just work, is '''half true - and the false half is not
+the expensive half'''. The facility itself - a Node image, a run-time cordis
+config, a profile-gated compose service and the board, channel, workflow and
+templates - was genuinely a mirror of the workbench and was built, pushed and
+even published to the container registry inside the first four executions.
+
+What consumed roughly 11 of the 16 hours was '''one acceptance criterion the
+operator never asked for in the clarified process''': proof that the harness boots
+with the plugin set and reaches email, sms, totp and browser. That criterion was
+(a) not part of mirroring the workbench deployment, (b) genuinely harder than the
+rest, because the plugins were not drop-in for the harness (different tool-call
+payload key and different credentials file format), and (c) partially
+contradictory with the cost rule that external services must not live in the
+workstation image.
+
+{{OmniFact
+|what=cost and root causes of an over-specified workstation task
+|where=the omnidev board, task ..._workstation_new_board_channel
+|status=never completed, task left in backlog
+|source=Projects/Omniagent/Workstation-Task-Post-Mortem.md
+}}
+
+== Measured cost ==
+
+{| class="wikitable"
+|-
+! Metric !! Value
+|-
+| Task-attached executor threads || 29
+|-
+| LLM calls || 3 864
+|-
+| Prompt tokens || 400 494 967
+|-
+| Completion tokens || 16 741 219
+|-
+| Cached prompt tokens || 353 669 248 (88.3 percent cache hit)
+|-
+| Wall clock, first thread start to last thread end || 15 h 52 m
+|-
+| Largest single-call prompt context || 17 943 219 tokens
+|-
+| Compaction prompt messages || 3 169
+|}
+
+Eight consecutive executions stopped at exactly 297 to 300 of 300 LLM calls. A
+retry creates a new thread that re-reads the repository from scratch, at roughly
+35 million prompt tokens per thread; in total the range recorded 3 291 file reads
+and 1 612 greps against 80 edit operations. At an average of roughly 103 600
+prompt tokens per call, the redundant read and verify pattern is what paid the
+bill.
+
+== Root causes, ranked ==
+
+# '''Over-specified acceptance criterion inside one task''' - the dominant cause.
+   The capability proof was not in the operator's clarified process and generated
+   the reject and rework cycles that followed.
+# '''Per-execution budget with no carry-over''' - serial amnesia. Nothing forced a
+   smaller, verifiable unit of work, and the only exit was a human-gated thread
+   failure.
+# '''Context churn''' - thousands of compaction prompts and repeated reads.
+# '''Provider balance exhausted''' - the tail of the window ended in payment
+   errors, and the dispatcher re-entered the next workflow step with a fresh
+   thread each time, so the last eleven review threads died on their first
+   provider call with zero LLM calls.
+
+== Lessons carried into the standard config ==
+
+* Split a large facility from its capability proof: land the mirror, then verify
+  capabilities in their own task with their own budget.
+* Keep the acceptance criteria to what the operator actually asked for; an
+  unrequested proof is where an unbounded read and verify loop starts.
+* Make a retry able to resume rather than re-derive, so a fresh thread does not
+  re-read the whole tree.
+
+These lessons sit alongside the deliberate decisions recorded in
+[[Workstation Standard Config]], the native plugin layout in
+[[Workstation Compat Layer]], and the executor-versus-tester boundary and tool
+priority in [[Plugin Tool Awareness]].
+
+== See also ==
+
+* [[Workstation Standard Config]] - the rows and decisions the task was building
+* [[Workstation Compat Layer]] - the seam the capability proof had to cross
+* [[Plugin Tool Awareness]] - tool priority and role separation
+
+[[Category:Omniagent]]
+
+''Source: omniagent wiki Projects/Omniagent/Workstation-Task-Post-Mortem.md''

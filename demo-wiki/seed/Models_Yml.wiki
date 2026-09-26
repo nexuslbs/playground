@@ -1,0 +1,119 @@
+'''Models Yml''' is the pure definition file that overrides provider definitions
+and per-model settings WITHOUT writing a plugin or any custom code. It is loaded
+at startup from <code>{OMNI_DIR}/config/models.yml</code>; an absent or empty file
+means zero behavior change, and a malformed file fails startup with a clear error.
+
+== Overview ==
+
+The file is the reference for three situations:
+
+* A provider plugin's hardcoded <code>default_model.allowed_values</code> is
+  wrong or missing new models.
+* You want a provider that has no plugin at all; the builtin
+  <code>chat_completions</code> / <code>anthropic_messages</code> support is enough.
+* You want per-provider or per-model token budgets, <code>max_tokens</code>,
+  <code>api_mode</code>, <code>supports_reasoning</code>, base URL or API key
+  without touching plugin config.
+
+{{OmniFact
+|what=config/models.yml provider and model overrides
+|where={OMNI_DIR}/config/models.yml
+|status=shipped
+|source=Projects/Omniagent/Models-Yml.md
+}}
+
+== Format ==
+
+<pre>
+providers:
+  deepseek:
+    plugin: true
+    models: ["deepseek-flash", "deepseek-v4-pro"]
+  my_provider_01:
+    plugin: false
+    api_mode: "chat_completions"
+    supports_reasoning: true
+    default_base_url: "http://noop-provider:9090/v1"
+    refresh_url: "https://api.deepseek.com/v1/models"
+    default_model: "test-model-1"
+    api_key: "$secret:MY_SECRET"
+    models: ["my_model_01", "my_model_02", "my_model_03"]
+    model_config:
+      my_model_02:
+        api_mode: "anthropic"
+        supports_reasoning: false
+        token_budget_soft: 200000
+        token_budget_hard: 1000000
+        max_tokens: 32000
+        max_tokens_on_truncation: 128000
+</pre>
+
+Values written as <code>$secret:NAME</code> or <code>$env:VAR</code> are resolved
+through the credential store, never written literally; see [[Secrets Store]].
+
+== Semantics ==
+
+* <code>providers.&lt;name&gt;.plugin</code> selects the transport: <code>true</code>
+  or a plugin name uses the provider plugin, <code>false</code> uses builtin
+  support. A name that matches an existing provider plugin overrides it.
+* <code>providers.&lt;name&gt;.models</code> replaces
+  <code>default_model.allowed_values</code> in every selector.
+* Provider-level fields override the plugin manifest or config.
+* <code>model_config.&lt;model&gt;</code> overrides per model, with the highest
+  precedence.
+
+== Budget fallback chain ==
+
+For each of the soft and hard token budgets independently:
+
+# <code>model_config.&lt;model&gt;</code> budget in models.yml;
+# else the provider-level budget;
+# else the global settings budget (<code>prompt_token_budget_soft</code> default
+# 100000, <code>prompt_token_budget_hard</code> default 500000).
+
+The agent resolves the effective values and passes them to the prompt plugin's
+compact-messages tool; the prompt plugin never reads models.yml itself.
+
+== API and refresh flow ==
+
+{| class="wikitable"
+|-
+! Operation !! Method + path
+|-
+| Read the parsed file || <code>GET /api/models</code>
+|-
+| Validate and atomically write || <code>PUT /api/models</code>
+|}
+
+The dashboard refresh button fetches the remote models from <code>refresh_url</code>
+and upserts the models.yml entry through the API. An entry that is absent is
+created with <code>plugin: true</code> plus the fetched list; an entry that is
+present has ONLY its <code>models</code> updated, every other field byte-identical.
+Plugin manifests, config schemas and caches are never touched.
+
+== DeepSeek "v4.1 flash" ==
+
+There is no <code>deepseek-v4.1-flash</code> model name: the provider rejects it.
+<code>GET https://api.deepseek.com/v1/models</code> returns
+<code>deepseek-flash</code> and <code>deepseek-v4-pro</code>, and a direct call
+with <code>deepseek-flash</code> answered correctly, so '''deepseek-flash IS
+v4.1 flash'''. The models list and <code>default_model</code> were corrected in
+the authoritative code-less provider source.
+
+== Provider resolution ==
+
+<code>models_yaml::resolve_provider_metadata</code> is the single resolver both
+consumers use. The effective list is enabled provider plugins '''unioned with'''
+models.yml, deduplicated, with models.yml winning on the same id. A merged entry
+whose plugin is missing or disabled fails with HTTP 400 naming the provider id and
+reason, never a silent fallback.
+
+== See also ==
+
+* [[Workstation Standard Config]] - the service that loads this file
+* [[Secrets Store]] - how <code>$secret:</code> references resolve
+* [[Omniagent API]] - the endpoint map, including the models endpoints
+
+[[Category:Omniagent]]
+
+''Source: omniagent wiki Projects/Omniagent/Models-Yml.md''
