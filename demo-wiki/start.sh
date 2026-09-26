@@ -43,8 +43,6 @@ demo_password() {
   return 1
 }
 
-# The stock MediaWiki password policy rejects the short, well-known passwords of
-# the demo accounts; this throwaway wiki deliberately relaxes it.
 # Settings the stock installer does not write: the demo password policy and
 # serving the Main Page at "/" (so http://localhost:12349/ answers 200 directly
 # instead of redirecting to the article URL).
